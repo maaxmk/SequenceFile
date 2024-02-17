@@ -74,7 +74,7 @@ while(true) {
 		// paramValues is an associatively indexed array
 		// it is updated with the param values for a step when paramDump() is called
 		names[p] => string pName;
-		seq.paramValues[names[p]] => int pVal;
+		seq.pVals()[names[p]] => int pVal;
 		<<< pName, "=", pVal >>>;
 		
 		// use the parameters
