@@ -108,7 +108,7 @@ public class SequenceFile {
 	fileHeadSize => int lastStepHeadPos;
 	
 	fun void initSequence(int numSteps) {
-		if(numSteps > 256) {
+		if(numSteps > 65534) {
 			<<< "too many steps..." >>>;
 			return;
 		}
@@ -193,7 +193,7 @@ public class SequenceFile {
 	
 	fun void clearStep(int stepNum) {
 		// remove all parameter data from a step
-		if(stepNum < getSequenceLength()) {
+		if(stepNum < getSequenceLength() && stepNum > -1) {
 			if(stepNum == getSequenceLength()-1) {
 				seekToStep(stepNum);
 				// copy the currnet step size
@@ -224,7 +224,7 @@ public class SequenceFile {
 	
 	fun void removeStep(int stepNum) {
 		// remove the step, shortening the sequence
-		if(stepNum < getSequenceLength()) {
+		if(stepNum < getSequenceLength() && stepNum > -1) {
 			if(stepNum == getSequenceLength()-1) {
 				seekToStep(stepNum);
 				// copy the currnet step size
@@ -289,6 +289,11 @@ public class SequenceFile {
 		// it also seeks to the head of the param if it exists aka lastParamHeadPos
 		// if the param doesnt exist, it seeks to the end of the step where a param can be inserted aka lastParamHeadPos
 		
+		if(stepNum > getSequenceLength()-1 && stepNum < 0) {
+			<<< "tring to check a step that doesnt exist!" >>>;
+			return 0;
+		}
+		
 		seekToStep(stepNum);
 		sequenceFile.seek(lastStepHeadPos+4);
 		sequenceFile.readInt(FileIO.INT16) => int stepSize;
@@ -334,10 +339,12 @@ public class SequenceFile {
 	}
 	
 	fun void setParam(int stepNum, string paramName, int paramVal) {
-		if(paramVal > 255 || paramVal < 0) {
-			<<<"Trying to set param out of range!">>>;
+		if(stepNum > getSequenceLength()-1 && stepNum < 0) {
+			<<< "tring to set a step that doesnt exist!" >>>;
 			return;
 		}
+		if(paramVal > 255) 255 => paramVal;
+		if(paramVal < 0) 0 => paramVal;
 		
 		// this function either changes the value of an existing param if it exists for the step
 		// or it adds the param to the step if it doesnt exist
@@ -359,6 +366,10 @@ public class SequenceFile {
 	fun int addToParam(int stepNum, string paramName, int addVal) {
 		// this function either changes the value of an existing param if it exists for the step
 		// or it adds the param to the step if it doesnt exist
+		if(stepNum > getSequenceLength()-1 && stepNum < 0) {
+			<<< "tring to add to a step that doesnt exist!" >>>;
+			return 0;
+		}
 		
 		// this function also returns the value of the param
 		if(checkForParam(stepNum, paramName)) {
@@ -373,6 +384,8 @@ public class SequenceFile {
 			return newVal;
 		} else {
 			//param doesn't exist
+			if(addVal > 255) 255 => addVal;
+			if(addVal < 0) 0 => addVal;
 			insertInt8(sequenceFile, lastParamHeadPos, paramHeadByte); // insert param header
 			insertInt16(sequenceFile, lastParamHeadPos+1, paramName.length()); // insert param name size
 			insertString(sequenceFile, lastParamHeadPos+paramHeaderSize, paramName); // insert param name
@@ -406,6 +419,7 @@ public class SequenceFile {
 	// they are stored assosiatively e.g. paramValues["paramName"]
 	// they are read whenever paramDump is called
 	int paramValues[0]; 
+	fun int[] pVals() { return paramValues; };
 	// x+++x+++x+++x+++x+++x+++x+++x+++x+++x+++x+++x+++x+++x+++x+++x+++
 	
 	fun int getParam(int stepNum, string paramName) {
@@ -420,7 +434,7 @@ public class SequenceFile {
 		}
 	}
 	
-	fun void getStepParamCount(int stepNum) {
+	fun int getStepParamCount(int stepNum) {
 		seekToStep(stepNum);
 		sequenceFile.seek(lastStepHeadPos+4);
 		sequenceFile.readInt(FileIO.INT16) => int stepSize; // get size
@@ -430,13 +444,14 @@ public class SequenceFile {
 		while(sequenceFile.tell()<lastStepHeadPos+stepSize) {
 			sequenceFile.readInt(FileIO.INT8) => int checkByte;
 			if(checkByte != paramHeadByte) {
-				return;
+				return paramCount;
 			}
 			sequenceFile.readInt(FileIO.INT16) => int paramNameSize;
 			sequenceFile.seek(sequenceFile.tell()+paramNameSize+1);
 			1 +=> paramCount;
 		}
 		paramCount => lastStepParamCount;
+		return paramCount;
 	}
 	
 	fun string[] paramDump(int stepNum) {
