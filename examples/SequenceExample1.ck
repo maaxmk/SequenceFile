@@ -7,14 +7,14 @@ seq.setDirectory(me.dir()+"sequences");
 
 // run this to create a new sequence
 //seq.createNewFile("example1",8); 
-//me.yield();
+//me.yield(); // yield to prevent setting params before its finished 
 
 // run this to load an existing sequence
 seq.loadSequence("example1");      
 
 // you only need to run these one time to write some data in the sequence file
 /*
-// "note" will set the frequency of s
+// "note" will set the midi note/frequency of s
 seq.setParam(0,"note",31);
 seq.setParam(2,"note",22);
 seq.setParam(3,"note",14);
@@ -28,18 +28,17 @@ seq.setParam(3,"gain",4);
 seq.setParam(4,"gain",6);
 seq.setParam(7,"gain",12);
 
-// "trig" will trigger the output envelope
+// "trig" will trigger the output envelope and set the length of decay
 seq.setParam(0,"trig",100);
 seq.setParam(3,"trig",255);
 seq.setParam(5,"trig",10);
 seq.setParam(6,"trig",50);
 seq.setParam(7,"trig",100);
 
-// "dope" will trigger a sample and set the position in it
+// "dope" will trigger a sample envelope and set the position of the sample
 seq.setParam(3,"dope",255);
-seq.setParam(6,"dope",25);
-*/
-
+seq.setParam(7,"dope",25);
+//*/
 
 // Synth
 SinOsc m => ADSR mEnv => SinOsc s => Gain g => LPF lp => ADSR env => dac;
@@ -54,7 +53,7 @@ lp.freq(1200);
 SndBuf buf => ADSR dEnv => dac;
 "special:dope" => buf.read;
 1. => buf.rate;
-0.5 => buf.gain;
+0.75 => buf.gain;
 dEnv.set(8::ms,60::ms,0.,30::ms);
 
 
