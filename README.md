@@ -37,14 +37,14 @@ SequenceFile has an array called ```paramValues``` that is associatively indexed
 // paramDmup returns an array of all the param names of the step
 seq.paramDump(stepNumber) @=> string names[];
 for(int p; p<names.size(); p++) {
-  // paramValues contains the param value associated with the param names
-  seq.paramValues[names[p]] => int paramVal;
+  // pVals() returns paramValues, which contains the param value associated with the param names
+  seq.pVals()[names[p]] => int paramVal;
 }
 ```
 
 # Methods
 
-## File Managing
+### File Managing
 ``` void setDirectory(string path) ```  
 Choose an absolute path to a directory that will be the location of loading and saving sequence files
 
@@ -82,17 +82,17 @@ Set the value of an existing parameter in a step if it exists. If the parameter 
 ``` int addToParam(int stepNum, string paramName, int addVal) ```  
 Returns the new value of the parameter. Add to the value of an existing parameter in a step if it exists. If the parameter does not already exist it will create it and set the value as the add value. The value after adding is always clamped to 0 - 255.
 
-more param editing wip...
+more param editing methods wip...
 
 ### Parameter Getting
 ``` int getParam(int stepNum, string paramName) ```  
 Returns the parameter value of a given step and parameter. If it doesnt exist it returns -1.
 
 ``` int getStepParamCount(int stepNum) ```  
-Returns the number of parameters of a given step.
+Returns the number of parameters for a given step.
 
 ``` string[] paramDump(int stepNum) ```  
-Returns a string array of all the parameter names for a given step. This function also updates an internal array of parameter values for the given step. 
+Returns a string array of all the parameter names for a given step. This function also updates an internal array of parameter values for the given step (see pVals() bellow). 
 
 ``` int[] pVals() ```  
 Returns the array of parameter values for the step that was given in the last call of paramDump. This array is only associativly indexed, meaning it is indexed with the names of the parameters. If you try to check the size of this array it will always be 0 because it has no number indexes. 
@@ -106,7 +106,7 @@ Here is the definition of the SequenceFile file structure:
 ```
 
 SequenceFile is an interface for reading and writing to a file 
-for the purpose of storing and recalling parameter data for sequences of steps
+for the purpose of storing and recalling parameter data for step sequences 
 
 files have a variable number of steps in them
 steps have a variable number of parameters in them
@@ -120,17 +120,25 @@ FILE HEADER STRUCTURE:
 - total num steps in sequence (INT16, 2 byte : 65535 steps max)
 * from this point the number of bytes in the file is variable 
 
-STEP STRUCTURE, this structure is variable length and repeats for each step:
-- step beginning (INT32, 4 bytes : 0x53544550[constant] aka STEP in ascii. this helps check that steps are the size they say they are, by providing a consistent anchor at the begining of each one)
-- step size (INT16, 2 bytes : the number of bytes for the step, including the step size, beginning and number of bytes in parameters) 
-[ if step size is 0x6 that means their is no param data in the step, there should never be less than 6 ]
+STEP STRUCTURE
+This structure is variable length and repeats for each step:
+- step beginning (INT32, 4 bytes : 0x53544550[constant] aka STEP in ascii. this helps check 
+    that steps are the size they say they are, by providing a consistent anchor at the 
+    begining of each one)
+- step size (INT16, 2 bytes : the number of bytes for the step, including the step size,
+    beginning and number of bytes in parameters) 
+[ if step size is 0x6 that means their is no param data in the step, there should never be 
+    less than 6 ]
 * from this point the number of bytes in the step is variable
 
-PARAMETER STRUCTURE, this structure is variable length and repeats for each parameter in the step:
+PARAMETER STRUCTURE
+This structure is variable length and repeats for each parameter in the step:
 [ param size is not givin explicitly, but it is param name size + 4 ]
 - param beginning (INT8, 1 byte : 0x56[constant] aka V in ascii )
-- param name size (INT16, 2 bytes : the number of bytes in the param name, i.e. the number of ASCII characters)
-[ if param name size is equal to 0 the param is invalid and should be ignored. the param size should be 4 in this case ]
+- param name size (INT16, 2 bytes : the number of bytes in the param name, i.e. the number 
+    of ASCII characters)
+[ if param name size is equal to 0 the param is invalid and should be ignored. the param 
+    size should be 4 in this case ]
 * from this point the number of bytes in the parameter is variable
 - param name (X bytes : string in ASCII)
 - param value (INT8, 1 byte : the value of the parameter, 0-255 int)
