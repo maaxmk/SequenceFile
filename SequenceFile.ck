@@ -397,7 +397,21 @@ public class SequenceFile {
 	}
 	
 	fun void removeParam(int stepNum, string paramName) {
-		// delete a parameter from a step
+		// delete a parameter from a step (if it exists)
+		if(checkForParam(stepNum, paramName)) {
+			//param exists
+			paramHeaderSize+lastParamNameSize+paramValueSize => int currentParamSize;
+			// remove() from the end of step header to the end of step size
+			remove(sequenceFile, lastParamHeadPos, lastParamHeadPos+currentParamSize);
+			// get the step size
+			seekToStep(stepNum);
+			sequenceFile.seek(lastStepHeadPos+4);
+			sequenceFile.readInt(FileIO.INT16) => int currentStepSize;
+			// subtract param size from step size and write new step size
+			currentStepSize - currentParamSize => int newStepSize;
+			sequenceFile.seek(lastStepHeadPos+4);
+			sequenceFile.write(newStepSize, FileIO.INT16);
+		}
 	}
 	
 	fun void copyParam(int targetStepNum, string targetParamName, int destinationStepNum) {
