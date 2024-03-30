@@ -82,6 +82,9 @@ Set the value of an existing parameter in a step if it exists. If the parameter 
 ``` int addToParam(int stepNum, string paramName, int addVal) ```  
 Returns the new value of the parameter. Add to the value of an existing parameter in a step if it exists. If the parameter does not already exist it will create it and set the value as the add value. The value after adding is always clamped to 0 - 255.
 
+``` void removeParam(int stepNum, string paramName) ```  
+Removes the parameter from the step entireley.
+
 more param editing methods wip...
 
 ### Parameter Getting
